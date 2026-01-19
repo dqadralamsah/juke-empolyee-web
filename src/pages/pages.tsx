@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { getEmployees, deleteEmployee } from '../api/eployeeApi';
 import type { Employee } from '../types/employeeTypes';
+import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '../api/eployeeApi';
 import EmployeeForm from '../components/EmployeeForm';
 import EmployeeTable from '../components/EmployeeTable';
 
 export default function EmployeePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selected, setSelected] = useState<Employee | null>(null);
+  const [initialData, setInitialData] = useState<Employee | null>(null);
 
   const fetchEmployees = async () => {
     const res = await getEmployees();
@@ -17,19 +17,36 @@ export default function EmployeePage() {
     fetchEmployees();
   }, []);
 
+  const handleSubmit = async (data: Employee) => {
+    try {
+      if (data.id) {
+        await updateEmployee(data.id, data);
+      } else {
+        await createEmployee(data);
+      }
+
+      setInitialData(null);
+      fetchEmployees();
+    } catch (error) {
+      alert('Gagal menyimpan data');
+    }
+  };
+
   const handleDelete = async (id: number) => {
-    await deleteEmployee(id);
-    fetchEmployees();
+    if (!confirm('Yakin hapus employee ini?')) return;
+
+    try {
+      await deleteEmployee(id);
+      fetchEmployees();
+    } catch (error) {
+      alert('Gagal menghapus employee');
+    }
   };
 
   return (
-    <>
-      <EmployeeForm
-        selected={selected}
-        refresh={fetchEmployees}
-        clearSelected={() => setSelected(null)}
-      />
-      <EmployeeTable employees={employees} onEdit={setSelected} onDelete={handleDelete} />
-    </>
+    <div className="p-8 space-y-8">
+      <EmployeeForm initialData={initialData} onSubmit={handleSubmit} />
+      <EmployeeTable employees={employees} onEdit={setInitialData} onDelete={handleDelete} />
+    </div>
   );
 }
